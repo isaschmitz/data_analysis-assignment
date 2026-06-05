@@ -1,137 +1,54 @@
-import tempfile
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+"""Spec for the Assignment 1 analysis helpers (student stubs in the assignment)."""
+
+from __future__ import annotations
 
 import numpy as np
+import pandas as pd
 import pytest
-import xarray as xr
 
-from amoc_analysis import analysis
-
-# Sample data
-VALID_URL = "https://rapid.ac.uk/sites/default/files/rapid_data/"
-INVALID_URL = "ftdp://invalid-url.com/data.nc"
-INVALID_STRING = "not_a_valid_source"
-
-
-def test_get_default_data_dir():
-    # This should always resolve to your project's /data directory
-    data_dir = analysis.get_default_data_dir()
-    assert isinstance(data_dir, Path)
-    assert data_dir.name == "data"
-    assert (
-        data_dir.exists() or not data_dir.exists()
-    )  # Should be valid even if data folder doesn't yet exist
-
-
-@patch("amoc_analysis.analysis.requests.get")
-def test_download_file_http(mock_get):
-    # Set up mock HTTP response
-    mock_response = MagicMock()
-    mock_response.iter_content = lambda chunk_size: [b"test content"]
-    mock_response.__enter__.return_value = mock_response
-    mock_response.raise_for_status = lambda: None
-    mock_get.return_value = mock_response
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        url = "https://example.com/testfile.txt"
-        out_path = Path(tmpdir) / "testfile.txt"
-
-        downloaded = analysis.download_file(url, tmpdir)
-        assert Path(downloaded).exists()
-        with open(downloaded, "rb") as f:
-            assert f.read() == b"test content"
-
-
-def test_apply_defaults_decorator_applies_source_and_file_list():
-    # Define a dummy function to wrap
-    def dummy_reader(source=None, file_list=None):
-        return {"source": source, "file_list": file_list}
-
-    default_source = "http://example.com"
-    default_files = ["test.nc"]
-
-    decorated = analysis.apply_defaults(default_source, default_files)(dummy_reader)
-
-    # Test with no arguments
-    result = decorated()
-    assert result["source"] == default_source
-    assert result["file_list"] == default_files
-
-    # Test with only one override
-    result = decorated(source="custom.nc")
-    assert result["source"] == "custom.nc"
-    assert result["file_list"] == default_files
-
-    result = decorated(file_list=["override.nc"])
-    assert result["source"] == default_source
-    assert result["file_list"] == ["override.nc"]
-
-
-@pytest.mark.parametrize(
-    "url,expected",
-    [
-        (VALID_URL, True),
-        (INVALID_URL, False),
-        ("not_a_url", False),
-    ],
+from spectra_filtering.analysis import (
+    summary_stats,
+    seasonal_cycle,
+    decorrelation_timescale,
 )
-def test_is_valid_url(url, expected):
-    assert analysis._is_valid_url(url) == expected
 
 
-def test_safe_update_attrs_add_new_attribute():
-    ds = xr.Dataset()
-    new_attrs = {"project": "MOVE"}
-    ds = analysis.safe_update_attrs(ds, new_attrs)
-    assert ds.attrs["project"] == "MOVE"
+def test_summary_stats_handles_gaps() -> None:
+    data = np.array([1.0, 2.0, 3.0, 4.0, np.nan])
+    s = summary_stats(data)
+    assert s["n"] == 5
+    assert s["n_missing"] == 1
+    assert s["mean"] == pytest.approx(2.5)
+    assert s["median"] == pytest.approx(2.5)
+    assert s["range"] == pytest.approx(3.0)
 
 
-def test_safe_update_attrs_existing_key_logs(capsys):
-    ds = xr.Dataset(attrs={"project": "MOVE"})
-    new_attrs = {"project": "OSNAP"}
-
-    analysis.safe_update_attrs(ds, new_attrs, overwrite=False, verbose=True)
-    
-    captured = capsys.readouterr()
-    assert "Attribute 'project' already exists in dataset attrs and will not be overwritten." in captured.out
-
-
-def test_safe_update_attrs_existing_key_with_overwrite():
-    ds = xr.Dataset(attrs={"project": "MOVE"})
-    new_attrs = {"project": "OSNAP"}
-    ds = analysis.safe_update_attrs(ds, new_attrs, overwrite=True)
-    assert ds.attrs["project"] == "OSNAP"
+def test_seasonal_cycle_recovers_annual_signal() -> None:
+    t = pd.date_range("2000-01-01", "2009-12-31", freq="D")
+    # warm in northern summer (peaks ~July), cold in January
+    sig = -np.cos(2 * np.pi * t.dayofyear.values / 365.25)
+    clim = seasonal_cycle(t.values, sig, by="month")
+    assert set(clim.index) == set(range(1, 13))
+    assert {"mean", "median"} <= set(clim.columns)
+    assert clim.loc[7, "mean"] > clim.loc[1, "mean"]  # July warmer than January
 
 
-def test_reformat_units_var_sv_conversion():
-    # Create a fake transport DataArray with units in m3/s
-    ds = xr.Dataset(
-        {
-            "transport": xr.DataArray(
-                data=np.array([1.0e6, 2.0e6]),
-                dims=["time"],
-                attrs={"units": "m^3/s", "long_name": "Volume transport"},
-            ),
-            "velocity": xr.DataArray(
-                data=np.array([100.0, 200.0]),
-                dims=["time"],
-                attrs={"units": "cm/s", "long_name": "Flow velocity"},
-            ),
-        }
-    )
+def test_decorrelation_white_vs_correlated() -> None:
+    rng = np.random.default_rng(0)
+    dt = 1.0
+    n = 20000
 
-    new_unit = analysis.reformat_units_var(ds, "transport")
-    # Units should now be Sv
-    assert new_unit == "Sv"
+    white = rng.standard_normal(n)
+    tau_w, ndof_w = decorrelation_timescale(white, dt)
 
-    new_unit = analysis.reformat_units_var(ds, "velocity")
-    assert new_unit == "cm s-1"
+    # AR(1), strongly autocorrelated
+    r = 0.95
+    ar = np.zeros(n)
+    for i in range(1, n):
+        ar[i] = r * ar[i - 1] + rng.standard_normal()
+    tau_a, ndof_a = decorrelation_timescale(ar, dt)
 
-
-def test_convert_units_var():
-    var_values = 100
-    current_units = "cm/s"
-    new_units = "m/s"
-    converted_values = analysis.convert_units_var(var_values, current_units, new_units)
-    assert converted_values == 1.0
+    assert tau_w < 5 * dt                  # white: short integral scale
+    assert ndof_w > 0.3 * n                # white: many independent samples
+    assert tau_a > tau_w                   # correlated: longer scale
+    assert ndof_a < ndof_w                 # correlated: fewer d.o.f.

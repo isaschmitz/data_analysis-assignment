@@ -4,8 +4,10 @@ from typing import Callable, List, Union
 import pandas as pd
 import xarray as xr
 
-from amoc_analysis import utilities
-from amoc_analysis.utilities import apply_defaults
+from amoc_analysis import analysis as utilities
+
+from amoc_analysis.analysis import apply_defaults
+
 
 # Default list of RAPID data files
 RAPID_DEFAULT_SOURCE = "https://rapid.ac.uk/sites/default/files/rapid_data/"
