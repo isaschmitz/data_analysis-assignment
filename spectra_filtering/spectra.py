@@ -117,7 +117,7 @@ def welch_psd(
     """
     import scipy.signal as signal
     fs = 1/ dt_days
-    freq, psd = signal.welch(x, fs = fs, window = window, nperseg = segment_length, noverlap = int(overlap * segment_length))
+    freq, psd = signal.welch(x, fs = fs, window = window, nperseg = segment_length, noverlap = max(0, segment_length // 2))
     
     from scipy.stats import chi2
     K = dt_days / 2
@@ -152,4 +152,4 @@ def parseval_ratio(x: np.ndarray, freq: np.ndarray, psd: np.ndarray) -> float:
     """
     integrated = float(np.trapezoid(psd, freq))
     variance = float(np.var(np.asarray(x, dtype="float64")))
-    return integrated / variance
+    return (integrated / variance)
