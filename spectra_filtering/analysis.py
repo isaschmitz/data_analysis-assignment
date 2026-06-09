@@ -44,7 +44,7 @@ def summary_stats(values: np.ndarray) -> dict[str, float]:
     n = len(values)
     n_missing = np.sum(np.isnan(values))
     finite_values = values[np.isfinite(values)]
-    
+
     if len(finite_values) == 0:
         mean, std, median, min_val, max_val = np.nan, np.nan, np.nan, np.nan, np.nan
     else:
@@ -65,7 +65,7 @@ def summary_stats(values: np.ndarray) -> dict[str, float]:
         "median": median,
         "min": min_val,
         "max": max_val,
-        "range": range_val
+        "range": range_val,
     }
 
 

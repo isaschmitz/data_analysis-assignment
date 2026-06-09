@@ -31,7 +31,7 @@ def frequency_axis(n: int, dt_days: float) -> np.ndarray:
 def raw_periodogram(
     x: np.ndarray,
     dt_days: float,
-    detrend: bool = True,
+    detrend: str = "linear",
     window: str = "boxcar",
 ) -> tuple[np.ndarray, np.ndarray]:
     """Raw periodogram power spectral density estimate.
@@ -67,18 +67,22 @@ def raw_periodogram(
     that :func:`parseval_ratio` returns approximately 1.
     """
 
-    from scipy import signal 
-    fs = 1/ dt_days
-    freq, psd = signal.periodogram(x, fs=fs, detrend= detrend, window=window) # window = 'boxcar' 
+    from scipy import signal
+
+    fs = 1 / dt_days
+    freq, psd = signal.periodogram(
+        x, fs=fs, detrend=detrend, window=window
+    )  # window = 'boxcar'
     return freq, psd
 
-    #raise NotImplementedError("Implement the one-sided, Parseval-normalised periodogram.")
+    # raise NotImplementedError("Implement the one-sided, Parseval-normalised periodogram.")
 
 
 def welch_psd(
     x: np.ndarray,
     dt_days: float,
     segment_length: int,
+    detrend: str = "linear",
     overlap: float = 0.5,
     window: str = "hann",
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -116,20 +120,28 @@ def welch_psd(
     TODO (student): implement the segmenting, windowing, averaging, and normalisation.
     """
     import scipy.signal as signal
-    fs = 1/ dt_days
-    freq, psd = signal.welch(x, fs = fs, window = window, nperseg = segment_length, noverlap = max(0, segment_length // 2))
-    
+
+    fs = 1 / dt_days
+    overlap = max(0, segment_length // 2)
+    freq, psd = signal.welch(
+        x,
+        fs=fs,
+        window=window,
+        nperseg=segment_length,
+        noverlap=overlap,
+        detrend=detrend,
+    )
+
     from scipy.stats import chi2
+
     K = dt_days / 2
-    dof = 2*K
-    lo = dof / chi2.ppf(0.975, dof) 
+    dof = 2 * K
+    lo = dof / chi2.ppf(0.975, dof)
     hi = dof / chi2.ppf(0.025, dof)
 
-    return {'freq': freq, 'psd': psd * 2 * K / dt_days, 'lo': lo, 'hi': hi}
+    return {"freq": freq, "psd": psd * 2 * K / dt_days, "lo": lo, "hi": hi}
 
-
-
-    #raise NotImplementedError("Implement Welch overlapped-segment averaging.")
+    # raise NotImplementedError("Implement Welch overlapped-segment averaging.")
 
 
 def parseval_ratio(x: np.ndarray, freq: np.ndarray, psd: np.ndarray) -> float:
@@ -152,4 +164,4 @@ def parseval_ratio(x: np.ndarray, freq: np.ndarray, psd: np.ndarray) -> float:
     """
     integrated = float(np.trapezoid(psd, freq))
     variance = float(np.var(np.asarray(x, dtype="float64")))
-    return (integrated / variance)
+    return integrated / variance
