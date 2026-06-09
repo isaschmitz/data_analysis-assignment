@@ -40,7 +40,7 @@ def test_welch_reduces_variance_relative_to_periodogram() -> None:
     rng = np.random.default_rng(1)
     x = rng.standard_normal(8192)
     _, pgram = raw_periodogram(x, DT, detrend="linear", window="boxcar")
-    _, welch = welch_psd(x, DT, segment_length=512, overlap=0.5, detrend="linear")
+    _, welch, lo, hi = welch_psd(x, DT, segment_length=512, overlap=0.5)
     # crude smoothness proxy: relative scatter of neighbouring bins
     scatter = lambda p: np.std(np.diff(p)) / np.mean(p)
     assert scatter(welch) < scatter(pgram)
