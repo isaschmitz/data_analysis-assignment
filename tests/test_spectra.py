@@ -40,10 +40,10 @@ def test_welch_reduces_variance_relative_to_periodogram() -> None:
     rng = np.random.default_rng(1)
     x = rng.standard_normal(8192)
     _, pgram = raw_periodogram(x, DT, detrend="linear", window="boxcar")
-    _, welch, lo, hi = welch_psd(x, DT, segment_length=512, overlap=0.5)
+    welch = welch_psd(x, DT, segment_length=512, overlap=0.5)
     # crude smoothness proxy: relative scatter of neighbouring bins
     scatter = lambda p: np.std(np.diff(p)) / np.mean(p)
-    assert scatter(welch) < scatter(pgram)
+    assert scatter(welch["psd"]) < scatter(pgram)
 
 
 def test_tapering_reduces_leakage_for_off_bin_tone() -> None:
@@ -55,5 +55,5 @@ def test_tapering_reduces_leakage_for_off_bin_tone() -> None:
     freq, psd_box = raw_periodogram(x, DT, detrend="linear", window="boxcar")
     _, psd_hann = raw_periodogram(x, DT, detrend="linear", window="hann")
     peak = np.argmax(psd_box)
-    far = (freq > freq[peak] * 3)  # well away from the tone
+    far = freq > freq[peak] * 3  # well away from the tone
     assert np.median(psd_hann[far]) < np.median(psd_box[far])
