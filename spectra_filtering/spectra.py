@@ -134,12 +134,14 @@ def welch_psd(
 
     from scipy.stats import chi2
 
-    K = dt_days / 2
+    K_pre = (x.size // segment_length)
+    K = K_pre + (K_pre-1)
     dof = 2 * K
     lo = dof / chi2.ppf(0.975, dof)
     hi = dof / chi2.ppf(0.025, dof)
 
-    return {"freq": freq, "psd": psd * 2 * K / dt_days, "lo": lo, "hi": hi}
+    #return {"freq": freq, "psd": psd * 2 * K / dt_days, "lo": lo, "hi": hi}
+    return {"freq": freq, "psd": psd, "lo": lo, "hi": hi}
 
     # raise NotImplementedError("Implement Welch overlapped-segment averaging.")
 
