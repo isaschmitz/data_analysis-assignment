@@ -1,5 +1,7 @@
 # **OSNAP EAST - CHARACTERIZATION AND SPECTRAL ANALYSIS**
 
+https://github.com/isaschmitz/data_analysis-assignment
+
 # Table of contents
 1. [Introduction](#introduction)
 2. [Characterize the data in time domain](#characterize-the-data-time-domain)
