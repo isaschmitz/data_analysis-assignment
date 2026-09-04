@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Any, Tuple, Union
 
 import matplotlib.pyplot as plt
+import numpy as np
 import xarray as xr
 from pandas import DataFrame
 from pandas.io.formats.style import Styler
@@ -214,4 +215,57 @@ def plot_time_series(
     ax.grid(True, alpha=0.3)
     plt.tight_layout()
 
+    return fig, ax
+
+
+def plot_time_series_comparison(
+    time_a,
+    series_a,
+    time_b,
+    series_b,
+    label_a: str = "Series A",
+    label_b: str = "Series B",
+    title: str = "Time series comparison",
+    ylabel: str = "Transport (Sv)",
+    figsize: Tuple[int, int] = (12, 5),
+):
+    """Plot two time series together on a common time axis.
+
+    This is a generic plotting helper for the RAPID comparison analysis and other
+    time-series comparisons.
+    """
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.plot(time_a, series_a, label=label_a, linewidth=1.5)
+    ax.plot(time_b, series_b, label=label_b, linewidth=1.5)
+    ax.set_title(title)
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel("Time")
+    ax.grid(True, alpha=0.3)
+    ax.legend()
+    plt.tight_layout()
+    return fig, ax
+
+
+def plot_regression_scatter(
+    x,
+    y,
+    slope: float,
+    intercept: float,
+    x_label: str = "x",
+    y_label: str = "y",
+    title: str = "Regression",
+    figsize: Tuple[int, int] = (6, 6),
+):
+    """Scatter plot with a linear regression line."""
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.scatter(x, y, alpha=0.7)
+    x_line = np.asarray(x, float)
+    y_line = slope * x_line + intercept
+    ax.plot(x_line, y_line, color="C3", linewidth=2, label=f"fit: y = {slope:.3f} x + {intercept:.3f}")
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    ax.set_title(title)
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    plt.tight_layout()
     return fig, ax

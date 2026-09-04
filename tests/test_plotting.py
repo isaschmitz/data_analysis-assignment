@@ -122,3 +122,33 @@ def test_show_attributes_with_dataset():
     attributes = result["Attribute"].tolist()
     assert "title" in attributes
     assert "institution" in attributes
+
+
+def test_plot_time_series_comparison():
+    time = np.arange("2004-01-01", "2004-01-04", dtype="datetime64[D]")
+    fig, ax = plotting.plot_time_series_comparison(
+        time, [1, 2, 3], time, [3, 2, 1], label_a="A", label_b="B"
+    )
+    try:
+        assert len(ax.get_lines()) == 2
+        assert [line.get_label() for line in ax.get_lines()] == ["A", "B"]
+        assert ax.get_title() == "Time series comparison"
+    finally:
+        import matplotlib.pyplot as plt
+
+        plt.close(fig)
+
+
+def test_plot_regression_scatter():
+    fig, ax = plotting.plot_regression_scatter(
+        [0, 1, 2], [1, 3, 5], 2.0, 1.0, x_label="input", y_label="output"
+    )
+    try:
+        assert len(ax.collections) == 1
+        assert len(ax.get_lines()) == 1
+        assert ax.get_xlabel() == "input"
+        assert ax.get_ylabel() == "output"
+    finally:
+        import matplotlib.pyplot as plt
+
+        plt.close(fig)
