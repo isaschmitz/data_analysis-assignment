@@ -5,6 +5,9 @@ requires = ["setuptools>=68", "wheel"]
 [project2]
 name = "spectra_filtering"
 
+[project3]
+name = "correlation_trends"
+
 
 [project]
 name = "amoc-analysis"
@@ -42,7 +45,7 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["amoc_analysis", "spectra_filtering"]
+include = ["amoc_analysis", "spectra_filtering", "correlation_trends"]
 
 [tool.black]
 line-length = 88

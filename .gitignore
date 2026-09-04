@@ -2,12 +2,14 @@ setup.sh
 */_version.py
 data/temp.nc
 
-
+.DS_Store
+tests2/data/ts_gridded.nc
+data/ts_gridded.nc
 logs/*log
 
 # VSCode settings
 .vscode/*
-
+notebooks/data/ts_gridded.nc
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
